@@ -11,7 +11,7 @@ class Router(object):
     password = None
     
     
-    def reconnect_dsl(self):
+    def reconnect_internet(self):
         raise NotImplementedError()
 
     
@@ -30,12 +30,23 @@ class Skyhub(Router):
         self.session_key_timestamp = 0
         
 
-    def reconnect_dsl(self):
+    def reconnect_internet(self):
         # disconnect and connect
         self._dsl_state('disconnect')
         time.sleep(5)
         self._dsl_state('connect')
 
+
+    def reboot_router(self):
+        self._get_session_key()
+        url = 'http://{ip}/%27sky_rebootinfo.cgi?todo=reboot&sessionKey={sk}%27'.format(ip=self.ip_addr, sk=self.session_key)
+
+        try:
+            result = requests.get(url, auth=(self.username, self.password))
+            result.raise_for_status()
+        except HTTPError as e:
+            print(e)
+        
         
     def _dsl_state(self, state):
         self._get_session_key()
@@ -79,7 +90,8 @@ class Rebooter():
     def __init__(self):
         self.dsl_state = None
         self.router = Skyhub(ip_addr='192.168.0.1', username='admin', password='sky')
-        self.router.reconnect_dsl()
+        #self.router.reconnect_internet()
+        self.router.reboot_router()
 
         
 
