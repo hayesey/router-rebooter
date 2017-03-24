@@ -78,7 +78,7 @@ class Rebooter():
     
     def __init__(self):
         self.dsl_state = None
-        self.router = Skyhub()
+        self.router = Skyhub(ip_addr='192.168.0.1', username='admin', password='sky')
         self.router.reconnect_dsl()
 
         
