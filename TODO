@@ -1,0 +1,26 @@
+every ten mins:
+
+- if down & was_up == Yes:
+  - was_up = No
+  - Time_Down = Time()
+
+- if down & was_up == No:
+  - "reconnect"
+  - last_action = reconnect
+
+- if down & last_action == reconnect:
+  - "reboot"
+  - last_action = reboot
+  - last_reboot_time = Time()
+
+- if down & last_action == reboot & last_reboot_time > 30mins ago:
+  - "reboot"
+  last_reboot_time = Time()
+
+if up & was_up == No:
+  - was_up = Yes
+  - send_email
+  - last_action = None
+
+if up & was_up == Yes:
+  - pass
