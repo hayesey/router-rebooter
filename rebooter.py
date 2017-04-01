@@ -2,6 +2,7 @@ from daemon import runner
 from lxml import html
 import getopt
 import requests
+import socket
 import sys
 import time
 
@@ -93,23 +94,58 @@ class Rebooter():
     def __init__(self, **kwargs):
         # daemon stuff
         self.stdin_path = '/dev/null'
-        self.stdout_path = '/dev/null'
-        self.stderr_path = '/dev/null'
-        self.pidfile_path = '/var/run/rebooter/rebooter.pid'
+        # these paths need changing
+        self.stdout_path = '/home/paul/rebooter.log'
+        self.stderr_path = '/home/paul/rebooter.log'
+        self.pidfile_path = '/home/paul/rebooter.pid'
         self.pidfile_timeout = 5
 
         self.debug = kwargs.get('debug', False)
         self.max_reconnects = int(kwargs.get('maxreconnects', 5))
         
+        # defaults need putting in skyhub class once args parsed
+        self.router = Skyhub(ip_addr = kwargs.get('ip_addr', '192.168.0.1'), 
+                             username = kwargs.get('username', 'admin'),
+                             password = kwargs.get('password', 'h620suy'))
+
+        self.was_up = self.up()
+        self.num_reconnects = 0
         
-        self.router = Skyhub(ip_addr = kwargs.get('ip_addr', None), 
-                             username = kwargs.get('username', None),
-                             password = kwargs.get('password', None))
-
-
+        
     def run(self):
-        #self.router.reconnect_internet()
-        self.router.reboot_router()
+        while (True):
+            if not self.up() and self.was_up:
+                self.was_up = False
+                self.time_down = time.time()
+            elif not self.up() and not self.was_up and self.num_reconnects < self.max_reconnects:
+                self.router.reconnect_internet()
+                self.num_reconnects += 1
+            elif not self.up() and not self.was_up and self.num_reconnects >= self.max_reconnects:
+                self.router.reboot_router()
+                self.num_reconnects = 0
+            elif self.up() and not self.was_up:
+                self.was_up = True
+                self.num_reconnects = 0
+                # send an email
+                print("internet restored")
+            elif self.up() and self.was_up:
+                print("up")
+            else:
+                print("this shouldn't happen")
+
+            # wait 5 mins after each loop
+            time.sleep(300)
+            
+
+    def up(self, host='8.8.8.8', port=53, timeout=2):
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except Exception as ex:
+            print(ex.message)
+            return False
+        
 
         
 
