@@ -1,5 +1,8 @@
+from daemon import runner
 from lxml import html
+import getopt
 import requests
+import sys
 import time
 
 
@@ -87,9 +90,24 @@ class Skyhub(Router):
             
 class Rebooter():
     
-    def __init__(self):
-        self.dsl_state = None
-        self.router = Skyhub(ip_addr='192.168.0.1', username='admin', password='sky')
+    def __init__(self, **kwargs):
+        # daemon stuff
+        self.stdin_path = '/dev/null'
+        self.stdout_path = '/dev/null'
+        self.stderr_path = '/dev/null'
+        self.pidfile_path = '/var/run/rebooter/rebooter.pid'
+        self.pidfile_timeout = 5
+
+        self.debug = kwargs.get('debug', False)
+        self.max_reconnects = int(kwargs.get('maxreconnects', 5))
+        
+        
+        self.router = Skyhub(ip_addr = kwargs.get('ip_addr', None), 
+                             username = kwargs.get('username', None),
+                             password = kwargs.get('password', None))
+
+
+    def run(self):
         #self.router.reconnect_internet()
         self.router.reboot_router()
 
@@ -97,4 +115,6 @@ class Rebooter():
 
 if __name__ == '__main__':
 
-    Rebooter()
+    rebooter = Rebooter()
+    daemon_runner = runner.DaemonRunner(rebooter)
+    daemon_runner.do_action()

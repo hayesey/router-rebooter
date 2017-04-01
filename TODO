@@ -4,23 +4,22 @@ every ten mins:
   - was_up = No
   - Time_Down = Time()
 
-- if down & was_up == No:
+- elif down & was_up == No & num_reconnects < max_reconnects:
   - "reconnect"
-  - last_action = reconnect
+  - num_reconnects++
+  - if num_reconnects >= max_reconnects:
+    - action = reboot
+  - else:
+    - action = reconnect
 
-- if down & last_action == reconnect:
+- elif down & action == reboot:
   - "reboot"
-  - last_action = reboot
-  - last_reboot_time = Time()
+  - action = reconnect
 
-- if down & last_action == reboot & last_reboot_time > 30mins ago:
-  - "reboot"
-  last_reboot_time = Time()
-
-if up & was_up == No:
+- elif up & was_up == No:
   - was_up = Yes
   - send_email
   - last_action = None
 
-if up & was_up == Yes:
+- else:
   - pass
